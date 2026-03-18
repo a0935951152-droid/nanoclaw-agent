@@ -48,3 +48,12 @@ nanoclaw_project/
     ├── .gitkeep        # 保持資料夾結構
     ├── brain_memory.pkl# (動態生成) AI 的實體記憶檔
     └── ...             # (動態生成) 用戶上傳與 AI 產出的檔案
+
+## 🔐 安全與 API 金鑰 (Security & API Key)
+
+本專案基於最高安全考量，**程式碼中完全沒有寫死 (hardcode) 任何 API Key**。
+
+* **如何設定 API Key：** 請在啟動系統後，於首頁的「NanoClaw 登入」介面中動態輸入你的 Anthropic API Key (`sk-ant-...`)。該金鑰只會安全地暫存於伺服器的記憶體 (Session) 中，絕對不會寫入硬碟。
+* **⚠️ 絕對不要誤推 (Do Not Push) 金鑰：**
+    * 請勿為了貪圖方便，將 API Key 直接寫進 `app.py` 或 `deploy.sh` 中並推送到 GitHub，這會導致你的金鑰在網路上裸奔並被惡意盜刷。
+    * 如果你未來自行擴充功能，改用 `.env` 檔案來管理本地端的環境變數，請**務必第一時間將 `.env` 加入 `.gitignore` 檔案中**，防止機密檔案被上傳。

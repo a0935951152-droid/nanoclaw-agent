@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoClaw 控制台</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background-color: #1e1e1e; color: #ddd; }
+        #sidebar { width: 260px; background: #252526; padding: 20px; display: flex; flex-direction: column; border-right: 1px solid #333; }
+        #chat-container { flex: 1; display: flex; flex-direction: column; padding: 20px; background: #1e1e1e; }
+        #messages { flex: 1; background: #2d2d2d; border-radius: 8px; padding: 20px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #444; }
+        .message { margin-bottom: 15px; line-height: 1.5; }
+        .user { color: #4dabf7; font-weight: bold; }
+        .bot { color: #51cf66; font-weight: bold; }
+        #input-area { display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 12px; background: #333; border: 1px solid #444; border-radius: 4px; color: #fff; transition: 0.3s; }
+        input[type="text"]:disabled { background: #555; cursor: not-allowed; }
+        button { padding: 12px 24px; background: #4dabf7; color: #1e1e1e; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover:not(:disabled) { background: #3bc9db; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .upload-btn { background: #51cf66; width: 100%; margin-top: 10px; }
+        .upload-btn:hover { background: #40c057; }
+        .file-list { list-style: none; padding: 0; flex: 1; overflow-y: auto; }
+        .file-list li { margin-bottom: 10px; background: #333; padding: 8px; border-radius: 4px; }
+        .file-list a { color: #4dabf7; text-decoration: none; word-break: break-all; }
+        .file-list a:hover { text-decoration: underline; }
+        
+        /* 實況轉播視窗樣式 */
+        .live-stream-box { background: #181818; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; white-space: pre-wrap; border: 1px solid #444; color: #bbb; margin-top: 8px; }
+        .thinking-text { color: #ffd43b; font-weight: bold; margin-bottom: 5px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        #billing-panel { margin-top: auto; padding-top: 15px; border-top: 1px solid #444; font-size: 13px; color: #aaa; }
+        .billing-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .highlight { color: #ffd43b; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h3 style="color: #4dabf7;">安全交換區 (Volume)</h3>
+        <form id="upload-form">
+            <input type="file" id="file-input" style="width: 100%; margin-bottom: 5px;" required>
+            <button type="submit" class="upload-btn">上傳</button>
+        </form>
+        <hr style="border-color: #444; margin: 15px 0;">
+        <h4>檔案列表：</h4>
+        <ul class="file-list" id="file-list">
+            {% for file in files %}
+                <li><a href="/files/{{ file }}" target="_blank">📄 {{ file }}</a></li>
+            {% endfor %}
+            {% if not files %}
+                <li style="color: #888;">尚無檔案</li>
+            {% endif %}
+        </ul>
+        
+        <div id="billing-panel">
+            <div class="billing-item">
+                <span>⚡ 總消耗 Tokens:</span>
+                <span id="token-val" class="highlight">0</span>
+            </div>
+            <div class="billing-item">
+                <span>💰 預估花費 (TWD):</span>
+                <span id="cost-val" class="highlight">0.0000</span>
+            </div>
+            <div style="font-size: 10px; color: #666; text-align: right; margin-top: 5px;">(費率: 30 TWD / 1M Tokens)</div>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div id="messages"></div>
+        <div id="input-area">
+            <input type="text" id="chat-input" placeholder="輸入指令與龍蝦對話..." autocomplete="off">
+            <button id="send-btn" onclick="sendMessage()">發送</button>
+        </div>
+    </div>
+
+    <script>
+        let sessionTotalTokens = 0;
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            const messagesDiv = document.getElementById('messages');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage('user', text);
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+            input.placeholder = "大龍蝦正在努力工作中，請稍候...";
+            
+            // 🌟 建立即時動態的實況轉播框
+            const streamId = 'stream-' + Date.now();
+            const streamDiv = document.createElement('div');
+            streamDiv.className = 'message bot';
+            streamDiv.id = streamId;
+            streamDiv.innerHTML = `<span class="bot">大龍蝦 (終端機實況):</span> <div id="${streamId}-content" class="live-stream-box"></div>`;
+            messagesDiv.appendChild(streamDiv);
+            const streamContent = document.getElementById(`${streamId}-content`);
+
+            try {
+                const response = await fetch('/api/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                // 🌟 使用 ReadableStream 解析後端傳來的每一行事件
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    let lines = buffer.split('\n\n');
+                    buffer = lines.pop(); // 保留尚未完整的片段
+                    
+                    for (let line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.substring(6));
+                            
+                            // 判斷傳送來的事件類型，更新實況看板
+                            if (data.type === 'thinking') {
+                                streamContent.innerHTML += `<div class="thinking-text">${data.content}</div>`;
+                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                            } 
+                            else if (data.type === 'update') {
+                                // 將字串轉換為安全格式後附加
+                                const safeText = data.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                                streamContent.innerHTML += safeText;
+                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                            } 
+                            else if (data.type === 'finish') {
+                                // 整個任務結束，移除實況框，顯示最終排版好的訊息
+                                document.getElementById(streamId).remove();
+                                appendMessage('bot', data.reply);
+                                
+                                // 更新計費儀表板
+                                if (data.tokens) {
+                                    sessionTotalTokens += data.tokens;
+                                    document.getElementById('token-val').innerText = sessionTotalTokens.toLocaleString();
+                                    let costTWD = (sessionTotalTokens / 1000000) * 30;
+                                    document.getElementById('cost-val').innerText = costTWD.toFixed(4);
+                                }
+                            }
+                            else if (data.type === 'error') {
+                                document.getElementById(streamId).remove();
+                                appendMessage('bot', '發生錯誤: ' + data.content);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                document.getElementById(streamId)?.remove();
+                appendMessage('bot', '連線失敗或發生異常。');
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.placeholder = "輸入指令與龍蝦對話...";
+                input.focus();
+            }
+        }
+
+        function appendMessage(role, text) {
+            const messagesDiv = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            const formattedText = text.replace(/\n/g, '<br>');
+            msgDiv.innerHTML = `<span class="${role}">${role === 'user' ? '管理員' : '大龍蝦'}:</span> <span style="color: #ccc;">${formattedText}</span>`;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function refreshFileList() {
+            try {
+                const response = await fetch('/chat');
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                document.getElementById('file-list').innerHTML = doc.getElementById('file-list').innerHTML;
+            } catch (err) {}
+        }
+        setInterval(refreshFileList, 3000);
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (response.ok) { refreshFileList(); fileInput.value = ''; }
+            } catch (err) {}
+        });
+
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+[
+  {
+    "rank": 1,
+    "title": "Rob Pike's 5 Rules of Programming",
+    "url": "https://www.cs.unc.edu/~stotts/COMP590-059-f24/robsrules.html"
+  },
+  {
+    "rank": 2,
+    "title": "Nightingale – open-source karaoke app that works with any song on your computer",
+    "url": "https://nightingale.cafe/"
+  },
+  {
+    "rank": 3,
+    "title": "Pandas Exercises for Data Analysis (Interactive)",
+    "url": "https://machinelearningplus.com/python/101-pandas-exercises-python-interactive/"
+  },
+  {
+    "rank": 4,
+    "title": "JPEG Compression",
+    "url": "https://www.sophielwang.com/blog/jpeg"
+  },
+  {
+    "rank": 5,
+    "title": "Federal Cyber Experts Called Microsoft's Cloud \"A Pile of Shit\", yet Approved It",
+    "url": "https://www.propublica.org/article/microsoft-cloud-fedramp-cybersecurity-government"
+  },
+  {
+    "rank": 6,
+    "title": "A Tiny Camera Revealed a Hidden Passage in the Great Pyramid",
+    "url": "https://modernengineeringmarvels.com/2026/03/13/a-tiny-camera-revealed-a-hidden-passage-in-the-great-pyramid/"
+  },
+  {
+    "rank": 7,
+    "title": "Tech hobbyist makes shoulder-mounted guided missile prototype with $96 in parts",
+    "url": "https://www.tomshardware.com/3d-printing/tech-hobbyist-makes-shoulder-mounted-guided-missile-prototype-with-usd96-in-parts-and-a-3d-printer-diy-manpads-includes-wi-fi-guidance-ballistics-calculations-optional-camera-for-tracking"
+  },
+  {
+    "rank": 8,
+    "title": "Write up of my homebrew CPU build",
+    "url": "https://willwarren.com/2026/03/12/building-my-own-cpu-part-3-from-simulation-to-hardware/"
+  },
+  {
+    "rank": 9,
+    "title": "Mistral AI Releases Forge",
+    "url": "https://mistral.ai/news/forge"
+  },
+  {
+    "rank": 10,
+    "title": "A Fuzzer for the Toy Optimizer",
+    "url": "https://bernsteinbear.com/blog/toy-fuzzer/"
+  }
+]

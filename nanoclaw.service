@@ -1,0 +1,15 @@
+[Unit]
+Description=NanoClaw Auto Deployment Service
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=test
+WorkingDirectory=/home/test/nanoclaw_project
+ExecStart=/usr/bin/python3 launcher.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

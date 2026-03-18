@@ -1,0 +1,10 @@
+# 1. 告訴 Git 忽略 shared_data 裡的所有東西，以及 Python 產生的暫存檔
+echo "shared_data/*" > .gitignore
+echo "__pycache__/" >> .gitignore
+echo "*.pyc" >> .gitignore
+
+# 2. 但特例允許追蹤 .gitkeep 這個檔案
+echo "!shared_data/.gitkeep" >> .gitignore
+
+# 3. 在 shared_data 裡面放一個空的 .gitkeep 檔案來撐住資料夾結構
+touch shared_data/.gitkeep
